@@ -1,11 +1,13 @@
 #include <Arduino.h>
 #include "lora/loraTransport.h"
+#include "lora/loraEncryption2.h"
 
 uint8_t buf_size = 10;
 
 void setup()
 {
     Serial.begin(9600);
+    aes_init();
     delay(1000);
 
     if(!radio_init())
@@ -14,6 +16,33 @@ void setup()
         Serial.println("LoRa ERROR");
     
     lora_start_listening();
+
+    uint8_t buf[41] = {1,2,3,4,5,6,7,8,0,0,0,2,3,4,5,6,7,8,0,0,0,2,3,4,5,6,7,8,0,0,0,2,3,4,5,6,7,8,0,0,0};
+    uint8_t buf2[50] = " ";
+    uint8_t buf3[50] = " ";
+    int8_t size2  =0 ;
+    int8_t size3  =0 ;
+    encrypt(buf, 23, buf2, &size2);
+
+    // Serial.println(size2);
+
+    // for (size_t i = 0; i < size2; i++)
+    // {
+    //     Serial.print(buf2[i]);
+    //     Serial.print(" ");
+    // }
+
+    // decrypt(buf2, size2, buf3, &size3);
+
+    // Serial.println(size3);
+    
+    // for (size_t i = 0; i < size3; i++)
+    // {
+    //     Serial.print(buf3[i]);
+    //     Serial.print(" ");
+    // }
+    
+
 }
 
 void receive()
@@ -89,7 +118,7 @@ void loop()
     //odkomentować jedną poniższych z funkcji
 
    // receive();
-    send();
+   // send();
 
    //test_send();
    // test_receive();

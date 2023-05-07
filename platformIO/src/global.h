@@ -5,6 +5,7 @@
 
 #define MAX_FRAME_SIZE 100
 
+#define NET_SIZE 3
 #define FRAME_VERSION         0
 #define VERSION_SIZE_BITS     3
 
