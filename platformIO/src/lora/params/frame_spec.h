@@ -1,14 +1,12 @@
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#ifndef FRAME_SPEC_H
+#define FRAME_SPEC_H
 
-#define DEBUG true
+#include <Arduino.h>
 
 #define MAX_FRAME_SIZE 100
 
 #define FRAME_VERSION         0
 #define VERSION_SIZE_BITS     3
-#define ADDRESS 0
-#define NET_SIZE 3
 
 //Adresy początków segmentów ramki (numer bajtu)
 
@@ -46,7 +44,5 @@ struct LoraFrame {
     byte buf[MAX_FRAME_SIZE] = {0};
     uint8_t size = 0;
 };
-
-volatile bool is_sending = false;
 
 #endif
