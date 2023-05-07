@@ -5,14 +5,12 @@
 #include "../global.h"
 #include "loraRadio.h"
 
-#define ADDRESS 0
-#define ROUTING_TABLE_SIZE 3
 
 struct Routing_table_record {
     uint8_t send_to;
 };
 
-Routing_table_record _routing_table[ROUTING_TABLE_SIZE] = {0,1,1}; //dla addr 0
+Routing_table_record _routing_table[NET_SIZE] = {0,1,1}; //dla addr 0
 //Routing_table_record _routing_table[ROUTING_TABLE_SIZE] = {0,1,2}; //dla addr 1
 //Routing_table_record _routing_table[ROUTING_TABLE_SIZE] = {1,1,2}; //dla addr 2
 //Routing_table_record _routing_table[ROUTING_TABLE_SIZE] = {0,1};
@@ -82,7 +80,7 @@ byte routing_try_receive(byte *buf, uint8_t *frame_size)
         {
             return ROUTING_RECEIVED;
         }
-        else if(buf[FRAME_POS_DEST_ADDR] < ROUTING_TABLE_SIZE) //i can help!
+        else if(buf[FRAME_POS_DEST_ADDR] < NET_SIZE) //i can help!
         {
             return _routing_forward(buf, frame_size);
         }
@@ -100,7 +98,7 @@ void routing_print_info()
     Serial.print("Device adress: ");
     Serial.println(ADDRESS);
     Serial.println("Routing table:");
-    for (int i = 0; i < ROUTING_TABLE_SIZE; i++)
+    for (int i = 0; i < NET_SIZE; i++)
     {
         Serial.print(i);
         Serial.print(" Fowarding to: ");
