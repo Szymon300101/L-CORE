@@ -19,12 +19,14 @@
 #define FRAME_POS_TYPE        03
 #define FRAME_POS_ID          04
 #define FRAME_POS_TTL         05
-#define FRAME_POS_CRC         06    //crc nie jest na końcu, żeby wszystkie adresy były stałe. jedyne co się rusza to wielkość MODBUS
+#define FRAME_POS_CRC         06    //crc nie jest na końcu, żeby wszystkie adresy były stałe. jedyne co się rusza to wielkość wiadomości
 
 //segment danych
-#define FRAME_POS_MSG         07    //encrypted
+#define FRAME_POS_MSG         07    //encrypted; zawiera w sobie token
 
-
+#define TOKEN_SIZE            2     //bytes
+#define TOKEN_TRESHOLD        200
+#define TOKEN_MAX            ((uint64_t) pow(2, 8 * TOKEN_SIZE) - 1)
 
 //Adres wewnątrz bajtu typu (numer bitu)
 

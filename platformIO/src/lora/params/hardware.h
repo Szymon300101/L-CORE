@@ -15,6 +15,8 @@
 #define LoRa_frequency      433E6
 
 
+#define RANDOM_SRC_PIN              A0
+
 
 
 #endif

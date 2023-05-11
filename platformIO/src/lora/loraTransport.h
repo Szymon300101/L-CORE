@@ -17,8 +17,20 @@ namespace Lora
     {
         GOT_NOTHING     = 00,
         RECEIVED        = 01,
-        ERROR_DECRYPT   = 03,
     };
+
+    struct NewMsg
+    {
+        uint8_t address;
+        uint8_t msg[MAX_FRAME_SIZE];
+        uint8_t msg_size;
+    };
+
+    // struct NewResp
+    // {
+    //     uint8_t address;
+    //     uint8_t flags;
+    // };
 
     CRC8 _crc;  //obiekt wykonujący CRC
     uint64_t _wait_start = 0; //początek oczekiwania na odpowiedź
@@ -33,6 +45,12 @@ namespace Lora
     bool _send(uint8_t *address, uint8_t *msg, uint8_t msg_size, uint8_t flags, bool allow_resend = true)
     {
         LoraFrame _frame;
+
+        if(DEBUG)
+        {
+            Serial.print("[_send] sending with flags: ");
+            Serial.println(flags);
+        }
 
         //wstępne składanie ramki
         if(msg_size > 0){
@@ -71,10 +89,18 @@ namespace Lora
             if (xQueueReceive(response_queue, &_frame, 0) == pdTRUE) {
                 if(_frame.buf[FRAME_POS_SEND_ADDR] == *address)
                 {
+                    if(DEBUG)
+                    {
+                        Serial.print("[_send] got response of type: ");
+                        Serial.println(_frame.buf[FRAME_POS_TYPE]);
+                    }
+
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ACK)
                         return true;
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ERROR)
                         return false;
+                    if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_SYNC)
+                        Encryption::swap_token(msg, msg_size, *address, _frame.buf+FRAME_POS_MSG);
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_RESEND && allow_resend)
                         _send(address, msg, msg_size, flags, false);    //wywołanie wysyłania jeszcze raz (rekurencyjnie), jednak bez pozwolenia na więcej Resendów
                 }
@@ -82,6 +108,27 @@ namespace Lora
         }
 
         return false;
+    }
+
+    bool _get_msg_from_frame(LoraFrame *frame, NewMsg *message)
+    {
+        uint8_t encrypted[MAX_FRAME_SIZE];
+        uint8_t encrypted_size = 0;
+
+        encrypted_size = (*frame).size - FRAME_POS_MSG;
+        memcpy(encrypted, (*frame).buf+FRAME_POS_MSG, encrypted_size);
+        (*message).address = (*frame).buf[FRAME_POS_SEND_ADDR];
+
+        bool decrypt_result = Encryption::decrypt(encrypted, encrypted_size, (*message).msg, &(*message).msg_size, (*message).address); 
+
+        if(!decrypt_result)
+        {
+            //zwracanie tokena, żeby wysyłający się dostosował
+            
+            (*message).msg_size = 0;
+            return false;
+        }
+        return true;
     }
 
     //oczekuje na nowe wiadomości
@@ -94,11 +141,12 @@ namespace Lora
 
             if(_receive_result == Routing::ROUTING_RECEIVED) //jest jakaś wiadomość
             {
-                if(DEBUG)
-                    Serial.println("Got frame.");
 
-                if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ACK & TYPE_MASK_ERROR & TYPE_MASK_RESEND)  //otrzymano odpowiedź (ack, error, resend)
+                if(_frame.buf[FRAME_POS_TYPE] & (TYPE_MASK_ACK | TYPE_MASK_ERROR | TYPE_MASK_RESEND | TYPE_MASK_SYNC))  //otrzymano odpowiedź (ack, error, resend)
                 {
+                    if(DEBUG)
+                        Serial.println("Got response.");
+
                     if (xQueueSend(response_queue, &_frame, 10) != pdTRUE) //leci do kolejki odpowiedzi
                     {
                         if(DEBUG)
@@ -106,15 +154,29 @@ namespace Lora
                     }
                 }else       //otrzymano nową wiadomość
                 {
-                    if (xQueueSend(new_frame_queue, &_frame, 10) != pdTRUE) //leci do kolejki nowych wiadomości
+                    if(DEBUG)
+                        Serial.println("Got new msg");
+
+                    NewMsg message;
+                    bool decrypt_result = _get_msg_from_frame(&_frame, &message);
+
+                    if(!decrypt_result)
                     {
-                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_ERROR); //kolejka się zapełniła
+                        uint8_t token[TOKEN_SIZE];
+                        Encryption::get_next_recv_token(token, message.address);
+                        _send(&message.address, token, TOKEN_SIZE, TYPE_MASK_SYNC | TYPE_MASK_RESEND);
+                        continue;
+                    }
+
+                    if (xQueueSend(new_frame_queue, &message, 10) != pdTRUE) //leci do kolejki nowych wiadomości
+                    {
+                        _send(&message.address, NULL, 0, TYPE_MASK_ERROR); //kolejka się zapełniła
                     }
 
                     //jeżeli wiadomość wymaga potwierdzenie, jest ono wysyłane
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_NEED_ACK)
                     {
-                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_ACK);
+                        _send(&message.address, NULL, 0, TYPE_MASK_ACK);
                     }
                 }
             }
@@ -132,12 +194,12 @@ namespace Lora
     //uruchamia nasłuch. wywołanie tej funkcji jest konieczne nawet gdy radio będzie tylko nadawać.
     void start_radio()
     {
-        new_frame_queue = xQueueCreate(QUEUE_LEN, sizeof(LoraFrame));
+        new_frame_queue = xQueueCreate(QUEUE_LEN, sizeof(NewMsg));
         response_queue = xQueueCreate(QUEUE_LEN, sizeof(LoraFrame));
 
         xTaskCreatePinnedToCore(_listen,
                                 "Lora Listen",
-                                1024,
+                                2024,
                                 NULL,
                                 0,
                                 NULL,
@@ -155,7 +217,7 @@ namespace Lora
     {
         uint8_t encrypted[MAX_FRAME_SIZE];
         uint8_t encrypted_size = 0;
-        Encryption::encrypt(msg, msg_size, encrypted, &encrypted_size);
+        Encryption::encrypt(msg, msg_size, encrypted, &encrypted_size, *address);
 
         return _send(address, encrypted, encrypted_size, TYPE_MASK_NEED_ACK);
     }
@@ -163,23 +225,12 @@ namespace Lora
     //sprawdza czy doszły jakieś nowe wiadomości. Zwraca status; jeżeli zwróci LORA_REC_NEED_RESP, należy niezwłocznie wysłać odpowiedź.
     ReceiveResult try_receive(uint8_t *address, uint8_t *msg, uint8_t *msg_size)
     {
-        LoraFrame _frame;
-        if (xQueueReceive(new_frame_queue, &_frame, 0) == pdTRUE)
+        NewMsg message;
+        if (xQueueReceive(new_frame_queue, &message, 0) == pdTRUE)
         {
-            uint8_t encrypted[MAX_FRAME_SIZE];
-            uint8_t encrypted_size = 0;
-
-            encrypted_size = _frame.size - FRAME_POS_MSG;
-            memcpy(encrypted, _frame.buf+FRAME_POS_MSG, encrypted_size);
-            *address = _frame.buf[FRAME_POS_SEND_ADDR];
-
-            bool decrypt_result = Encryption::decrypt(encrypted, encrypted_size, msg, msg_size, *address); 
-
-            if(!decrypt_result)
-            {
-                *msg_size = 0;
-                return ERROR_DECRYPT;
-            }
+            memcpy(msg, message.msg, message.msg_size);
+            *msg_size = message.msg_size;
+            *address = message.address;
 
             return RECEIVED;
         }

@@ -4,7 +4,7 @@
 
 #define DEBUG true
 
-#define ADDRESS 0
+#define ADDRESS 2
 #define NET_SIZE 3
 
 //3 urządzenia
