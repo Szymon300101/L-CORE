@@ -2,76 +2,84 @@
 #define ENC_H
 
 #include <Arduino.h>
-#include "../global.h"
+#include "params/user_params.h"
+#include "params/frame_spec.h"
+#include "../lib/aes/Cipher.h"
+#include "../secrets.h"         //jeżeli nie ma pliku secrets.h, postępuj zgodnie z instrukcjami w secrets_TEMPLATE.h
 
 #define TOKEN_TRESHOLD 50
 
-int16_t tokens[NET_SIZE] = {-1};
+namespace Lora{
+    namespace Encryption{
 
-byte enc_buf[MAX_FRAME_SIZE];
+        int16_t tokens[NET_SIZE] = {-1};
 
-void encrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size)
-{
-    uint8_t token = ++tokens[ADDRESS];
+        byte enc_buf[MAX_FRAME_SIZE];
 
-    //dopisywanie tokena
-    enc_buf[0] = token;
-    for (size_t i = 0; i < in_size; i++)
-    {
-        enc_buf[i+1] = input[i];
+        Cipher * cipher = new Cipher();
+
+        void init()
+        {
+            cipher->setKey(AES_KEY);
+        }
+
+        void encrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size)
+        {
+            uint8_t token = ++tokens[ADDRESS];
+
+            //dopisywanie tokena
+            enc_buf[0] = token;
+            memcpy(enc_buf+1, input, in_size);
+
+            cipher->encryptBytes(enc_buf, in_size+1, output, out_size);
+        }
+
+        bool validate_token(byte token, byte address)
+        {
+            // if(tokens[address] == -1)
+            // {
+            //     tokens[address] = address;
+            //     return true;
+            // }
+            // if(tokens[address] < token)
+            // {
+            //     tokens[address] = address;
+            //     return true;
+            // }
+            // if(tokens[address] - token > TOKEN_TRESHOLD)
+            // {
+            //     tokens[address] = address;
+            //     return true;
+            // }
+
+            // return false;
+
+            return true;
+        }
+
+        bool decrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size, byte sender_address)
+        {
+            int8_t eb_size = 0;
+            cipher->decryptBytes(input, in_size, enc_buf, &eb_size);
+
+            if(eb_size == 0)
+                return false;
+
+            uint8_t token = enc_buf[0];
+
+            if(!validate_token(token, sender_address))
+                return false;
+
+            *out_size = eb_size - 1;
+
+            memcpy(output, enc_buf+1, *out_size);
+
+            return true;
+        }
     }
-
-    //odwracanie kolejności
-    for (size_t i = 0; i < in_size+1; i++)
-    {
-        output[in_size-i-1] = enc_buf[i];
-    }
-    *out_size = in_size+1;
 }
 
-bool validate_token(byte token, byte address)
-{
-    if(tokens[address] == -1)
-    {
-        tokens[address] = address;
-        return true;
-    }
-    if(tokens[address] < token)
-    {
-        tokens[address] = address;
-        return true;
-    }
-    if(tokens[address] - token > TOKEN_TRESHOLD)
-    {
-        tokens[address] = address;
-        return true;
-    }
 
-    return false;
-}
-
-bool decrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size, byte sender_address)
-{
-    //odwracanie kolejności
-    for (size_t i = 0; i < in_size; i++)
-    {
-        enc_buf[in_size-i-1] = input[i];
-    }
-    
-    uint8_t token = enc_buf[0];
-
-    if(!validate_token(token, sender_address))
-        return false;
-
-    //dopisywanie tokena
-    for (size_t i = 0; i < in_size-1; i++)
-    {
-        output[i] = enc_buf[i+1];
-    }
-    *out_size = in_size-1;
-
-    return true;
-}
 
 
 #endif
