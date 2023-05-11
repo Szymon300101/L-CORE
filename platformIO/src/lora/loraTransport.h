@@ -4,6 +4,7 @@
 #include "CRC8.h"
 #include <Arduino.h>
 #include "loraRouting.h"
+#include "loraEncryption.h"
 #include "params/user_params.h"
 #include "params/frame_spec.h"
 
@@ -17,6 +18,7 @@ namespace Lora
         GOT_NOTHING = 00,
         REC_NO_RESP = 01,
         REC_NEED_RESP = 02,
+        REC_DECRYPT_ERROR = 03,
     };
 
     CRC8 _crc;  //obiekt wykonujący CRC
@@ -29,7 +31,7 @@ namespace Lora
     static QueueHandle_t response_queue;   //kolejka przechowująca odpowiedzi na wcześniejsze wiadomości
 
     //formatuje i wysyła ramkę zawierającą wiadomość i flagi (patrz użycie)
-    bool _send(uint8_t *address, byte *msg, uint8_t msg_size, byte flags)
+    bool _send(uint8_t *address, uint8_t *msg, uint8_t msg_size, uint8_t flags)
     {
         LoraFrame _frame;
         if(msg_size > 0){
@@ -139,13 +141,17 @@ namespace Lora
     }
 
     //wysyła wiadomość i oczekuje na potwierdzenie 'ACK'. zwraca dopiero gdy je otrzyma lub nastąpi timeout.
-    bool send_with_ack(uint8_t *address, byte *msg, uint8_t msg_size)
+    bool send_with_ack(uint8_t *address, uint8_t *msg, uint8_t msg_size)
     {
-        return _send(address, msg, msg_size, TYPE_MASK_NEED_ACK);
+        uint8_t encrypted[MAX_FRAME_SIZE];
+        uint8_t encrypted_size = 0;
+        Encryption::encrypt(msg, msg_size, encrypted, &encrypted_size);
+
+        return _send(address, encrypted, encrypted_size, TYPE_MASK_NEED_ACK);
     }
 
     //wysyła wiadomość, na którą adresat powinien od razu odpowiedzieć. zwraca gdy otrzyma odpowiedź lub nastąpi timeout
-    bool send_receive(uint8_t *address, byte *send_msg, uint8_t send_msg_size, byte *rec_msg, uint8_t rec_msg_size)
+    bool send_receive(uint8_t *address, uint8_t *send_msg, uint8_t send_msg_size, uint8_t *rec_msg, uint8_t rec_msg_size)
     {
         LoraFrame _frame;
         if(_send(address, send_msg, send_msg_size, TYPE_MASK_NEED_ACK))
@@ -158,14 +164,26 @@ namespace Lora
     }
 
     //sprawdza czy doszły jakieś nowe wiadomości. Zwraca status; jeżeli zwróci LORA_REC_NEED_RESP, należy niezwłocznie wysłać odpowiedź.
-    byte try_receive(uint8_t *address, byte *msg, uint8_t *msg_size)
+    byte try_receive(uint8_t *address, uint8_t *msg, uint8_t *msg_size)
     {
         LoraFrame _frame;
         if (xQueueReceive(new_frame_queue, &_frame, 0) == pdTRUE)
         {
-            *msg_size = _frame.size - FRAME_POS_TOKEN;
-            memcpy(msg, _frame.buf+FRAME_POS_TOKEN, *msg_size);
+            uint8_t encrypted[MAX_FRAME_SIZE];
+            uint8_t encrypted_size = 0;
+
+            encrypted_size = _frame.size - FRAME_POS_TOKEN;
+            memcpy(encrypted, _frame.buf+FRAME_POS_TOKEN, encrypted_size);
             *address = _frame.buf[FRAME_POS_SEND_ADDR];
+
+            bool decrypt_result = Encryption::decrypt(encrypted, encrypted_size, msg, msg_size, *address); 
+
+            if(!decrypt_result)
+            {
+                *msg_size = 0;
+                return REC_DECRYPT_ERROR;
+            }
+
             if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_NEED_ACK)
                 return REC_NO_RESP;
             else

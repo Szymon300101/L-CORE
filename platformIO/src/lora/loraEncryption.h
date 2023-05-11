@@ -23,7 +23,7 @@ namespace Lora{
             cipher->setKey(AES_KEY);
         }
 
-        void encrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size)
+        void encrypt(byte *input, uint8_t in_size, byte*output, uint8_t *out_size)
         {
             uint8_t token = ++tokens[ADDRESS];
 
@@ -31,7 +31,7 @@ namespace Lora{
             enc_buf[0] = token;
             memcpy(enc_buf+1, input, in_size);
 
-            cipher->encryptBytes(enc_buf, in_size+1, output, out_size);
+            cipher->encryptBytes(enc_buf, in_size+1, output, (int8_t*) out_size);
         }
 
         bool validate_token(byte token, byte address)
@@ -57,10 +57,10 @@ namespace Lora{
             return true;
         }
 
-        bool decrypt(byte *input, int8_t in_size, byte*output, int8_t *out_size, byte sender_address)
+        bool decrypt(byte *input, uint8_t in_size, byte*output, uint8_t *out_size, byte sender_address)
         {
-            int8_t eb_size = 0;
-            cipher->decryptBytes(input, in_size, enc_buf, &eb_size);
+            uint8_t eb_size = 0;
+            cipher->decryptBytes(input, in_size, enc_buf, (int8_t*) &eb_size);
 
             if(eb_size == 0)
                 return false;

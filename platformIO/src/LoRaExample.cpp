@@ -25,14 +25,14 @@ void receive()
     int received = Lora::try_receive(&addr,msg,&msg_size);
     if(received != Lora::GOT_NOTHING)
     {
-        Serial.println("Received packet '");
+        Serial.print("Received packet: ");
         for(int i=0;i<msg_size;i++)
         {
             Serial.print(msg[i]);
             Serial.print(" ");
         }
 
-        Serial.print("From:");
+        Serial.print("From: ");
         Serial.println(addr);
     }
 

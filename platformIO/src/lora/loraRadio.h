@@ -73,9 +73,9 @@ namespace Lora{
                 send_time = millis()-send_time;
                 Serial.print("Radio sent: ");
                 Serial.print(buf_size);
-                Serial.println(" bytes in ");
+                Serial.print(" bytes in ");
                 Serial.print(send_time);
-                Serial.print(" ms.");
+                Serial.println(" ms.");
             }
 
             is_sending = false;

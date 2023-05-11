@@ -41,7 +41,7 @@
 
 
 struct LoraFrame {
-    byte buf[MAX_FRAME_SIZE] = {0};
+    uint8_t buf[MAX_FRAME_SIZE] = {0};
     uint8_t size = 0;
 };
 
