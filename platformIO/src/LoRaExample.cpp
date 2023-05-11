@@ -12,7 +12,9 @@ void setup()
         Serial.println("LoRa Started");
     else
         Serial.println("LoRa ERROR");
-    
+        
+    Lora::Encryption::init();
+
     Lora::start_radio();
 }
 

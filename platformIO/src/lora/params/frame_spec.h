@@ -22,16 +22,15 @@
 #define FRAME_POS_CRC         06    //crc nie jest na końcu, żeby wszystkie adresy były stałe. jedyne co się rusza to wielkość MODBUS
 
 //segment danych
-#define FRAME_POS_TOKEN       07    //encrypted
-#define FRAME_POS_MODBUS      08    //encrypted
+#define FRAME_POS_MSG         07    //encrypted
 
 
 
 //Adres wewnątrz bajtu typu (numer bitu)
 
 #define TYPE_MASK_VER       B11100000
-#define TYPE_MASK_IS_RESP   B00010000
-#define TYPE_MASK_IS_ACK    B00001000
+#define TYPE_MASK_ACK       B00010000
+#define TYPE_MASK_SYNC      B00001000
 #define TYPE_MASK_NEED_ACK  B00000100
 #define TYPE_MASK_RESEND    B00000010
 #define TYPE_MASK_ERROR     B00000001

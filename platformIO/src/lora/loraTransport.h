@@ -15,10 +15,9 @@ namespace Lora
 {
     enum ReceiveResult
     {
-        GOT_NOTHING = 00,
-        REC_NO_RESP = 01,
-        REC_NEED_RESP = 02,
-        REC_DECRYPT_ERROR = 03,
+        GOT_NOTHING     = 00,
+        RECEIVED        = 01,
+        ERROR_DECRYPT   = 03,
     };
 
     CRC8 _crc;  //obiekt wykonujący CRC
@@ -31,16 +30,19 @@ namespace Lora
     static QueueHandle_t response_queue;   //kolejka przechowująca odpowiedzi na wcześniejsze wiadomości
 
     //formatuje i wysyła ramkę zawierającą wiadomość i flagi (patrz użycie)
-    bool _send(uint8_t *address, uint8_t *msg, uint8_t msg_size, uint8_t flags)
+    bool _send(uint8_t *address, uint8_t *msg, uint8_t msg_size, uint8_t flags, bool allow_resend = true)
     {
         LoraFrame _frame;
+
+        //wstępne składanie ramki
         if(msg_size > 0){
-            memcpy(_frame.buf+FRAME_POS_TOKEN,msg, msg_size);
+            memcpy(_frame.buf+FRAME_POS_MSG,msg, msg_size);
         }
-        _frame.size = FRAME_POS_TOKEN + msg_size;
+        _frame.size = FRAME_POS_MSG + msg_size;
 
         _frame.buf[FRAME_POS_TTL] = INIT_TTL;
 
+        //składanie pola typu
         uint8_t frame_type = 0;
         //unsigned char oldest_bits = (FRAME_VERSION & TYPE_MASK_VER) >> 8-VERION_SIZE_BITS;
         frame_type = frame_type | (FRAME_VERSION << (8-VERSION_SIZE_BITS));
@@ -52,22 +54,30 @@ namespace Lora
         _frame.buf[FRAME_POS_SEND_ADDR] = 0;
         _frame.buf[FRAME_POS_CRC] = 0;
         
-
+        //crc
         _crc.reset();
         _crc.add(_frame.buf,_frame.size);
         _frame.buf[FRAME_POS_CRC] = _crc.getCRC();
 
         Routing::send(*address,_frame.buf,&_frame.size);
 
-        if(flags & TYPE_MASK_IS_RESP) //nie trzeba czekać na odpowiedź
+        if(!(flags & TYPE_MASK_NEED_ACK)) //nie trzeba czekać na odpowiedź
             return true;
 
+        //oczekiwanie i obsługa odpowiedzi
         _wait_start = millis();
         while(millis()-_wait_start < RESPONSE_TIMEOUT_MS)
         {
             if (xQueueReceive(response_queue, &_frame, 0) == pdTRUE) {
                 if(_frame.buf[FRAME_POS_SEND_ADDR] == *address)
-                    return true;
+                {
+                    if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ACK)
+                        return true;
+                    if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ERROR)
+                        return false;
+                    if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_RESEND && allow_resend)
+                        _send(address, msg, msg_size, flags, false);    //wywołanie wysyłania jeszcze raz (rekurencyjnie), jednak bez pozwolenia na więcej Resendów
+                }
             }
         }
 
@@ -87,7 +97,7 @@ namespace Lora
                 if(DEBUG)
                     Serial.println("Got frame.");
 
-                if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_IS_RESP)  //otrzymano odpowiedź (ack, error lub inna odpowiedź)
+                if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_ACK & TYPE_MASK_ERROR & TYPE_MASK_RESEND)  //otrzymano odpowiedź (ack, error, resend)
                 {
                     if (xQueueSend(response_queue, &_frame, 10) != pdTRUE) //leci do kolejki odpowiedzi
                     {
@@ -98,13 +108,13 @@ namespace Lora
                 {
                     if (xQueueSend(new_frame_queue, &_frame, 10) != pdTRUE) //leci do kolejki nowych wiadomości
                     {
-                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_IS_RESP | TYPE_MASK_ERROR); //kolejka się zapełniła
+                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_ERROR); //kolejka się zapełniła
                     }
 
                     //jeżeli wiadomość wymaga potwierdzenie, jest ono wysyłane
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_NEED_ACK)
                     {
-                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_IS_RESP | TYPE_MASK_IS_ACK);
+                        _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_ACK);
                     }
                 }
             }
@@ -150,21 +160,8 @@ namespace Lora
         return _send(address, encrypted, encrypted_size, TYPE_MASK_NEED_ACK);
     }
 
-    //wysyła wiadomość, na którą adresat powinien od razu odpowiedzieć. zwraca gdy otrzyma odpowiedź lub nastąpi timeout
-    bool send_receive(uint8_t *address, uint8_t *send_msg, uint8_t send_msg_size, uint8_t *rec_msg, uint8_t rec_msg_size)
-    {
-        LoraFrame _frame;
-        if(_send(address, send_msg, send_msg_size, TYPE_MASK_NEED_ACK))
-        {
-            rec_msg_size = _frame.size - FRAME_POS_TOKEN;
-            memcpy(rec_msg, _frame.buf+FRAME_POS_TOKEN, rec_msg_size);
-            return true;
-        }else
-            return false;
-    }
-
     //sprawdza czy doszły jakieś nowe wiadomości. Zwraca status; jeżeli zwróci LORA_REC_NEED_RESP, należy niezwłocznie wysłać odpowiedź.
-    byte try_receive(uint8_t *address, uint8_t *msg, uint8_t *msg_size)
+    ReceiveResult try_receive(uint8_t *address, uint8_t *msg, uint8_t *msg_size)
     {
         LoraFrame _frame;
         if (xQueueReceive(new_frame_queue, &_frame, 0) == pdTRUE)
@@ -172,8 +169,8 @@ namespace Lora
             uint8_t encrypted[MAX_FRAME_SIZE];
             uint8_t encrypted_size = 0;
 
-            encrypted_size = _frame.size - FRAME_POS_TOKEN;
-            memcpy(encrypted, _frame.buf+FRAME_POS_TOKEN, encrypted_size);
+            encrypted_size = _frame.size - FRAME_POS_MSG;
+            memcpy(encrypted, _frame.buf+FRAME_POS_MSG, encrypted_size);
             *address = _frame.buf[FRAME_POS_SEND_ADDR];
 
             bool decrypt_result = Encryption::decrypt(encrypted, encrypted_size, msg, msg_size, *address); 
@@ -181,13 +178,10 @@ namespace Lora
             if(!decrypt_result)
             {
                 *msg_size = 0;
-                return REC_DECRYPT_ERROR;
+                return ERROR_DECRYPT;
             }
 
-            if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_NEED_ACK)
-                return REC_NO_RESP;
-            else
-                return REC_NEED_RESP;
+            return RECEIVED;
         }
 
         return GOT_NOTHING;
