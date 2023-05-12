@@ -25,7 +25,7 @@
 #define FRAME_POS_MSG         07    //encrypted; zawiera w sobie token
 
 #define TOKEN_SIZE            2     //bytes
-#define TOKEN_TRESHOLD        200
+#define TOKEN_TRESHOLD        20
 #define TOKEN_MAX            ((uint64_t) pow(2, 8 * TOKEN_SIZE) - 1)
 
 //Adres wewnątrz bajtu typu (numer bitu)

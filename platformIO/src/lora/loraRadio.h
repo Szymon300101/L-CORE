@@ -45,7 +45,7 @@ namespace Lora{
 
                 if(DEBUG)
                 {
-                    Serial.print("Radio got: ");
+                    Serial.print("[radio] Got: ");
                     Serial.print(packetSize);
                     Serial.println(" bytes");
                 }
@@ -71,7 +71,7 @@ namespace Lora{
             if(DEBUG)
             {
                 send_time = millis()-send_time;
-                Serial.print("Radio sent: ");
+                Serial.print("[radio] Sent: ");
                 Serial.print(buf_size);
                 Serial.print(" bytes in ");
                 Serial.print(send_time);

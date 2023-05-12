@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include "params/user_params.h"
 #include "params/frame_spec.h"
+#include "params/hardware.h"
 #include "../lib/aes/Cipher.h"
 #include "../secrets.h"         //jeżeli nie ma pliku secrets.h, postępuj zgodnie z instrukcjami w secrets_TEMPLATE.h
 
@@ -23,12 +24,23 @@ namespace Lora{
 
             randomSeed(analogRead(RANDOM_SRC_PIN));
 
+            if(DEBUG)
+                Serial.print("[encryption] Set recv tokens: ");
             for (size_t i = 0; i < NET_SIZE; i++)
             {
                 send_tokens[i] = 0;
-                recv_tokens[i] = 2;
-                //recv_tokens[i] = random(0,TOKEN_MAX);
+                //recv_tokens[i] = 2;
+                recv_tokens[i] = random(0,TOKEN_MAX);
+                
+                if(DEBUG)
+                {
+                    Serial.print(recv_tokens[i]);
+                    Serial.print(" ");
+                }
             }
+            
+            if(DEBUG)
+                Serial.println("");
             
         }
 
@@ -126,8 +138,6 @@ namespace Lora{
         void set_send_token(uint8_t *token_as_arr, uint8_t address)
         {
             send_tokens[address] = _merge_from_bytes(token_as_arr, TOKEN_SIZE);
-            if(DEBUG)
-                Serial.println("Set token");
         }
 
         void swap_token(uint8_t *msg, uint8_t msg_size, uint8_t address, uint8_t *new_token_as_arr)
@@ -141,7 +151,7 @@ namespace Lora{
             int8_t cipher_size = 0;
             cipher->encryptBytes(enc_buf,eb_size,msg, &cipher_size);
             if(DEBUG)
-                Serial.print("Swapped token to: ");
+                Serial.print("[encryption] Swapped token to: ");
                 Serial.println(send_tokens[address]);
         }
     }

@@ -55,10 +55,10 @@ namespace Lora{
 
             if(DEBUG)
             {
-                Serial.print("Forwarded to: ");
-                Serial.println(frame[FRAME_POS_NEXT_ADDR]);
+                Serial.print("[routing] Forwarded to: ");
+                Serial.print(frame[FRAME_POS_NEXT_ADDR]);
                 Serial.print("; Originaly from: ");
-                Serial.print(frame[FRAME_POS_SEND_ADDR]);
+                Serial.println(frame[FRAME_POS_SEND_ADDR]);
             }
                 
             return ROUTING_FORWARDED;
