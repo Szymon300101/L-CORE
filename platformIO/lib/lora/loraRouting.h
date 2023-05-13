@@ -49,7 +49,7 @@ namespace Lora{
             frame[FRAME_POS_TTL] -= 1;
             frame[FRAME_POS_NEXT_ADDR] = routing_table[frame[FRAME_POS_DEST_ADDR]]; //ustawianie następnego node'a, zależnie od adresata
 
-            delay(10); //raczej niepotrzebne
+            vTaskDelay(10); //raczej niepotrzebne
 
             Radio::send_bytes(frame, *frame_size);
 

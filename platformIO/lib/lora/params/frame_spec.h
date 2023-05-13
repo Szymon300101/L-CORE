@@ -6,7 +6,7 @@
 #define MAX_FRAME_SIZE 100
 
 #define FRAME_VERSION         0
-#define VERSION_SIZE_BITS     3
+#define VERSION_SIZE_BITS     3     //lepiej nie ruszać
 
 //Adresy początków segmentów ramki (numer bajtu)
 
@@ -24,11 +24,10 @@
 //segment danych
 #define FRAME_POS_MSG         07    //encrypted; zawiera w sobie token
 
-#define TOKEN_SIZE            2     //bytes
-#define TOKEN_TRESHOLD        20
-#define TOKEN_MAX            ((uint64_t) pow(2, 8 * TOKEN_SIZE) - 1)
 
-//Adres wewnątrz bajtu typu (numer bitu)
+
+
+//Adres wewnątrz bajtu typu (maski bitowe)
 
 #define TYPE_MASK_VER       B11100000
 #define TYPE_MASK_ACK       B00010000
@@ -38,7 +37,12 @@
 #define TYPE_MASK_ERROR     B00000001
 
 
-#define INIT_TTL            4
+#define TOKEN_SIZE            2     //w bajtach; min 1, max 4
+#define TOKEN_TRESHOLD        20
+#define TOKEN_MAX            ((uint64_t) pow(2, 8 * TOKEN_SIZE) - 1)
+
+
+#define INIT_TTL            4   //TTL (Time To Leave) nowej wiadomości - max ilość przekierowań podczas routowania
 
 
 struct LoraFrame {

@@ -5,8 +5,8 @@
 #include "params/user_params.h"
 #include "params/frame_spec.h"
 #include "params/hardware.h"
-#include "../lib/aes/Cipher.h"
-#include "../secrets.h"         //jeżeli nie ma pliku secrets.h, postępuj zgodnie z instrukcjami w secrets_TEMPLATE.h
+#include "../aes/Cipher.h"
+#include "../../src/secrets.h"         //jeżeli nie ma pliku secrets.h, postępuj zgodnie z instrukcjami w secrets_TEMPLATE.h
 
 namespace Lora{
     namespace Encryption{
@@ -72,18 +72,19 @@ namespace Lora{
             cipher->encryptBytes(enc_buf, in_size+TOKEN_SIZE, output, (int8_t*) out_size);
         }
 
-        uint8_t _dist_a_to_b(uint32_t a, uint32_t b, uint32_t overflow) {
-            uint64_t big_b = b;
-            if(b < a)
-                big_b += overflow;
-            a = big_b - a;
-            return a;
-        }
+        // uint8_t _dist_a_to_b(uint32_t a, uint32_t b, uint32_t overflow) {
+        //     uint64_t big_b = b;
+        //     if(b < a)
+        //         big_b += overflow;
+        //     a = big_b - a;
+        //     return a;
+        // }
 
         bool _validate_token(uint32_t token, byte address)
         {
 
-            uint32_t diff = _dist_a_to_b(recv_tokens[address], token, TOKEN_MAX);
+            //uint32_t diff = _dist_a_to_b(recv_tokens[address], token, TOKEN_MAX);
+            int64_t diff = token - recv_tokens[address];    //wywali przy przepełnieniu (TOKEN_MAX), ale nie szkodzi. jest przynajmniej czytelnie.
 
             if(DEBUG)
             {
@@ -95,7 +96,7 @@ namespace Lora{
                 Serial.print(diff);
             }
 
-            if(diff < TOKEN_TRESHOLD && diff != 0)
+            if(diff < TOKEN_TRESHOLD && diff > 0)
             {
                 if(DEBUG)
                     Serial.println(" Success.");

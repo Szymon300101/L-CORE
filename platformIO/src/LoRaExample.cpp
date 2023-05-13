@@ -1,5 +1,7 @@
 #include <Arduino.h>
-#include "lora/loraTransport.h"
+#include "../lib/lora/loraTransport.h"
+
+// żeby używać przykładu, jedyne co trzeba zmieniać to ustawiania w params/user_params.h
 
 uint8_t buf_size = 10;
 
@@ -38,7 +40,7 @@ void receive()
         Serial.println(addr);
     }
 
-    delay(100);
+    vTaskDelay(100);
 }
 
 void send()
@@ -59,7 +61,7 @@ void send()
         buf_size = 19;
     }
 
-    delay(2000);
+    vTaskDelay(2000);
 }
 
 void loop()
