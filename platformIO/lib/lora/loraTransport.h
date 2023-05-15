@@ -141,6 +141,22 @@ namespace Lora
 
             if(_receive_result == Routing::ROUTING_RECEIVED) //jest jakaś wiadomość
             {
+                LoraFrame crc_frame;
+                memcpy(&crc_frame, &_frame, sizeof(LoraFrame));
+                crc_frame.buf[FRAME_POS_SEND_ADDR] = 0;
+                crc_frame.buf[FRAME_POS_NEXT_ADDR] = 0;
+                crc_frame.buf[FRAME_POS_DEST_ADDR] = 0;
+                crc_frame.buf[FRAME_POS_CRC] = 0;
+
+                _crc.reset();
+                _crc.add(crc_frame.buf, crc_frame.size);
+                if(_crc.getCRC() != _frame.buf[FRAME_POS_CRC])
+                {
+                    if(DEBUG)
+                        Serial.println("[_listen] Bad CRC");
+                    _send(&_frame.buf[FRAME_POS_SEND_ADDR], NULL, 0, TYPE_MASK_RESEND);
+                    continue;
+                }
 
                 if(_frame.buf[FRAME_POS_TYPE] & (TYPE_MASK_ACK | TYPE_MASK_ERROR | TYPE_MASK_RESEND | TYPE_MASK_SYNC))  //otrzymano odpowiedź (ack, error, resend)
                 {
@@ -213,13 +229,13 @@ namespace Lora
     }
 
     //wysyła wiadomość i oczekuje na potwierdzenie 'ACK'. zwraca dopiero gdy je otrzyma lub nastąpi timeout.
-    bool send_with_ack(uint8_t *address, uint8_t *msg, uint8_t msg_size)
+    bool send_with_ack(uint8_t address, uint8_t *msg, uint8_t msg_size)
     {
         uint8_t encrypted[MAX_FRAME_SIZE];
         uint8_t encrypted_size = 0;
-        Encryption::encrypt(msg, msg_size, encrypted, &encrypted_size, *address);
+        Encryption::encrypt(msg, msg_size, encrypted, &encrypted_size, address);
 
-        return _send(address, encrypted, encrypted_size, TYPE_MASK_NEED_ACK);
+        return _send(&address, encrypted, encrypted_size, TYPE_MASK_NEED_ACK);
     }
 
     //sprawdza czy doszły jakieś nowe wiadomości. Zwraca status; jeżeli zwróci LORA_REC_NEED_RESP, należy niezwłocznie wysłać odpowiedź.
