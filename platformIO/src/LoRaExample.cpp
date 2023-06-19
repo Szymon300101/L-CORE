@@ -51,12 +51,12 @@ void receive()
     vTaskDelay(100);
 }
 
-void send()
+void send(uint8_t buf_size)
 {
 
     uint8_t send_to_addr = 2; //adres do którego wysyłamy
     uint8_t buf[] = {1,2,3,4,5,6,7,8,0,0,0,2,3,4,5,6,7,8,0,0,0}; //wiadomość do wysłania
-    uint8_t buf_size = 21;  //ilość bajtów do wysłania
+    //uint8_t buf_size = 21;  //ilość bajtów do wysłania
 
     //wysyłanie wiadomości. funkcja czeka ze zwróceniem, aż otrzyma potwierdzenie lub upłynie timeout
     bool result = Lora::send_with_ack(send_to_addr,buf,buf_size);
@@ -77,7 +77,10 @@ void send()
 void loop()
 {
     if(ADDRESS == 0)
-        send();
+        send(21);
+
+    // if(ADDRESS == 1)
+    //     send(10);
 
     if(ADDRESS == 2)
         receive();

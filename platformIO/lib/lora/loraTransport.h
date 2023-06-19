@@ -102,7 +102,7 @@ namespace Lora
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_SYNC)
                         Encryption::swap_token(msg, msg_size, *address, _frame.buf+FRAME_POS_MSG);
                     if(_frame.buf[FRAME_POS_TYPE] & TYPE_MASK_RESEND && allow_resend)
-                        _send(address, msg, msg_size, flags, false);    //wywołanie wysyłania jeszcze raz (rekurencyjnie), jednak bez pozwolenia na więcej Resendów
+                        return _send(address, msg, msg_size, flags, false);    //wywołanie wysyłania jeszcze raz (rekurencyjnie), jednak bez pozwolenia na więcej Resendów
                 }
             }
         }
@@ -147,6 +147,7 @@ namespace Lora
                 crc_frame.buf[FRAME_POS_NEXT_ADDR] = 0;
                 crc_frame.buf[FRAME_POS_DEST_ADDR] = 0;
                 crc_frame.buf[FRAME_POS_CRC] = 0;
+                crc_frame.buf[FRAME_POS_TTL] = INIT_TTL;
 
                 _crc.reset();
                 _crc.add(crc_frame.buf, crc_frame.size);
