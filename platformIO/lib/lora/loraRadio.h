@@ -8,13 +8,15 @@
 #include "params/user_params.h"
 
 namespace Lora{
+    
+    //wrapper wokół biblioteki LoRa.h, ułatwiający dostęp do niej
     namespace Radio{
         
         volatile bool is_sending = false; //jak radio wysyła, nie może jednocześnie słuchać
 
-        uint64_t send_time;
+        uint64_t send_time; //ile czasu zajęło ostatniw wysyłanie. używane do debugu
 
-        //Zwraca: true gdzy inicjalizacja się powiodła
+        //Zwraca: true gdy inicjalizacja się powiodła
         bool init()
         {
             SPI.begin(RADIO_SCLK_PIN, RADIO_MISO_PIN, RADIO_MOSI_PIN);

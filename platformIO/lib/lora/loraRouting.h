@@ -7,6 +7,8 @@
 #include "params/frame_spec.h"
 
 namespace Lora{
+
+    //pośrednia warstwa komunikacji; odpowiada głównie za adresowanie i przekierowywanie pakietów
     namespace Routing{
 
         enum Receive_result{
@@ -47,7 +49,11 @@ namespace Lora{
                 return ROUTING_TTL_EXPIRED;
             
             frame[FRAME_POS_TTL] -= 1;
-            frame[FRAME_POS_NEXT_ADDR] = routing_table[frame[FRAME_POS_DEST_ADDR]]; //ustawianie następnego node'a, zależnie od adresata
+
+            //ustawianie następnego node'a, zależnie od adresata
+            //wykonywany jest lookup w routing table, żeby sprawdzić, do kogo trzeba wysłać wiadomość,
+            //żeby ostatecznie doszła do adresata
+            frame[FRAME_POS_NEXT_ADDR] = routing_table[frame[FRAME_POS_DEST_ADDR]]; 
 
             vTaskDelay(10); //raczej niepotrzebne
 
@@ -66,7 +72,7 @@ namespace Lora{
 
         Receive_result try_receive(uint8_t *buf, uint8_t *frame_size)
         {
-            int32_t rssi; //nieużywana zmienna
+            int32_t rssi; //nieużywana zmienna (musi być bo try_receive_bytes jej wymaga)
             *frame_size = Radio::try_receive_bytes(buf, &rssi);
 
             if(*frame_size > 0 && buf[FRAME_POS_NEXT_ADDR] == ADDRESS) //sprawdza czy powinien cokolwiek robić

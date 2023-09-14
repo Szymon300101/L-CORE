@@ -9,10 +9,12 @@
 #include "params/frame_spec.h"
 
 #define RESPONSE_TIMEOUT_MS 1000
-#define QUEUE_LEN 4
+#define QUEUE_LEN 4 //wielkość kolejek wykorzystywanych do asynchroniczengo przekazywania danych
 
 namespace Lora
 {
+    //górna warstwa komunikacyjna; odpowiada za nasłuchiwanie, obsługę ACK, błędów itp.
+
     enum ReceiveResult
     {
         GOT_NOTHING     = 00,
@@ -26,14 +28,8 @@ namespace Lora
         uint8_t msg_size;
     };
 
-    // struct NewResp
-    // {
-    //     uint8_t address;
-    //     uint8_t flags;
-    // };
-
     CRC8 _crc;  //obiekt wykonujący CRC
-    uint64_t _wait_start = 0; //początek oczekiwania na odpowiedź
+    uint64_t _wait_start = 0; //czas początku oczekiwania na odpowiedź
     Routing::Receive_result _receive_result = Routing::ROUTING_GOT_NOTHING; 
 
     volatile bool _stop_listening = false;  //zmienna pozwalająca na przerwanie tasku nasłuchiwania
