@@ -8,11 +8,11 @@
 #define CH1_OFF_PIN   15
 #define TEST_PIN      34
 
-//adres radiowy stacji do któ©ej ma być wysyłane
+//adres radiowy stacji do której ma być wysyłane
 #define RELAY_STATION_ADRESS 1
 
 
-//program wykożystuje deep sleep do oszczędzania energii. Zasypia zawsze na koniec pętli setup,
+//program wykorzystuje deep sleep do oszczędzania energii. Zasypia zawsze na koniec pętli setup,
 //a po obudzeniu przez przycisk zaczyna cały program od początku (od setup znowu).
 //dlatego nie ma pętli loop.
 
