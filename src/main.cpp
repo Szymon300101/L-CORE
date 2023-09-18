@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "../lib/lora/loraTransport.h"
 
+#define DAC_PIN 25
 
 //Program czeka na wiadomości o temparaturze na czujniku i ustawia ją na DACu. 
 
@@ -16,7 +17,7 @@ void setup()
     Lora::Encryption::init();
     Lora::start_radio();
 
-    dacWrite(0);
+    dacWrite(DAC_PIN, 0);
 }
 
 void loop()
@@ -42,7 +43,7 @@ void loop()
         
         if(msg_size == 1)
         {
-            dacWrite(msg[0]);
+            dacWrite(DAC_PIN. msg[0]);
         }
     }
    
