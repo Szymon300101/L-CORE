@@ -9,7 +9,7 @@
 // 0 - urządzenie wysyłające
 // 1 - urządzenie przekazujące (opcjonalne)
 // 2 - urządzenie odbierające (Modbus)
-#define ADDRESS 0
+#define ADDRESS 2
 
 
 //wielkość sieci (nie zmieniać!)
