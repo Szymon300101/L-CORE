@@ -34,16 +34,17 @@ void loop()
     if(received == Lora::RECEIVED)
     {
         //można teraz na przykład wypisać otrzymaną wiadomość
-        Serial.print("Received packet");
-        for(int i=0, j=0;i<msg_size;i++)
-        {
-            dataToSendRTU[j]=(msg[i]<<8) | msg[i+1];
-            i++; j++;
-        }
+        // Serial.print("Received packet");
+        // for(int i=0, j=0;i<msg_size;i++)
+        // {
+        //     dataToSendRTU[j]=(msg[i]<<8) | msg[i+1];
+        //     i++; j++;
+        // }
         
         if(msg_size == 1)
         {
-            dacWrite(DAC_PIN. msg[0]);
+            Serial.println(msg[0]);
+            dacWrite(DAC_PIN, (int) msg[0]);
         }
     }
    
