@@ -7,7 +7,7 @@
 #define MIN_TEMP 8
 #define MAX_TEMP 40
 
-#define BASE_STATION_ADRESS 2 //adres radiowy stacji do której wysyłamy temperaturę
+#define BASE_STATION_ADRESS 3 //adres radiowy stacji do której wysyłamy temperaturę
 
 #define DELAY_MS 2000
 
