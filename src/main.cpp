@@ -47,5 +47,7 @@ void loop()
             dacWrite(DAC_PIN, (int) msg[0]);
         }
     }
+
+    delay(100);
    
 }
