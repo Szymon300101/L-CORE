@@ -3,8 +3,8 @@
 #include "../lib/lora/loraTransport.h"
 
 //piny przekaźników
-#define RELAY_0 0
-#define RELAY_1 2
+#define RELAY_0 12
+#define RELAY_1 14
 
 bool r0_on = false;
 bool r1_on = false;
