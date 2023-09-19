@@ -35,7 +35,6 @@ void setup() {
 
   esp_sleep_enable_ext1_wakeup(0x40000F000,ESP_EXT1_WAKEUP_ANY_HIGH);
 
-
   //obsługa przycisków po obudzeniu
 
   delay(100);
@@ -49,46 +48,43 @@ void setup() {
   // [1,0], [1,1] - on, off przekaźnika 1
   // [0] - test (chodzi o to żeby wiadomość miała 1 znak)
 
+  bool result;
+
   switch(pressed_pin)
   {
     //kanał 0
     case CH0_ON_PIN:
       {byte msg[2] = {0,1};
-      Serial.println(Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2));}
+      Oled::drawBigText(0,0, "R0 ON: ");
+      result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
     case CH0_OFF_PIN:
       {byte msg[2] = {0,0};
-      Serial.println(Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2));}
+      Oled::drawBigText(0,0, "R0 FF: ");
+      result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
 
     //kanał 1
     case CH1_ON_PIN:
       {byte msg[2] = {1,1};
-      Serial.println(Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2));}
+      Oled::drawBigText(0,0, "R1 ON: ");
+      result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
     case CH1_OFF_PIN:
       {byte msg[2] = {1,0};
-      Serial.println(Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2));}
+      Oled::drawBigText(0,0, "R1 OFF: ");
+      result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
 
     //test
     case TEST_PIN:
       {byte msg[1] = {0};
-      if(Lora::send_with_ack(RELAY_STATION_ADRESS,msg,1) > 0)
-      {
-        Oled::drawBigText(0,0,F("Test OK"));
-        Serial.println("Test: ok");
-      }else
-      {
-        Oled::drawBigText(0,0,F("Test FAILED"));
-        Serial.println("Test: failed");
-      }
-      
-      
-      }
+      Oled::drawBigText(0,0, "Radio Test");
+      result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,1);}
     break;
   }
 
+  Oled::drawBigText(0,20, result?"Success":"Failed");
   delay(1000);
 
   Oled::clear();

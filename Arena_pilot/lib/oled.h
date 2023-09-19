@@ -34,12 +34,12 @@ namespace Oled{
         return true;
     }
 
-    void sleepDisplay(Adafruit_SSD1306* display) {
-        display->ssd1306_command(SSD1306_DISPLAYOFF);
+    void sleepDisplay() {
+        display.ssd1306_command(SSD1306_DISPLAYOFF);
     }
 
-    void wakeDisplay(Adafruit_SSD1306* display) {
-        display->ssd1306_command(SSD1306_DISPLAYON);
+    void wakeDisplay() {
+        display.ssd1306_command(SSD1306_DISPLAYON);
     }
 
     void drawText(int x, int y, const __FlashStringHelper *text)

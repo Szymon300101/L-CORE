@@ -6,6 +6,9 @@
 #define RELAY_0 0
 #define RELAY_1 2
 
+bool r0_on = false;
+bool r1_on = false;
+
 //adres radiowy pilota, od którego ma odbierać komendy
 #define REMOTE_ADRESS 0
 
@@ -25,6 +28,9 @@ void setup() {
   Lora::Encryption::init();
 
   Lora::start_radio();
+
+  Oled::drawBigText(0,0, "R0: OFF");
+  Oled::drawBigText(0,20, "R1: OFF");
 }
 
 void loop() {
@@ -53,17 +59,35 @@ void loop() {
         if(msg[0] == 0) //przekaźnik 0
         {
           if(msg[1] == 0)
-            digitalWrite(RELAY_0, HIGH);
+          {
+            r0_on = false;
+          }
           else
-            digitalWrite(RELAY_0, LOW);
+          {
+            r0_on = true;
+          }
         }
         else //przekaźnik 1
         {
           if(msg[1] == 0)
-            digitalWrite(RELAY_1, HIGH);
+          {
+            r1_on =  false;
+          }
           else
-            digitalWrite(RELAY_1, LOW);
+          {
+            r1_on = true;
+            
+          }
         }
+        
+        Oled::clear();
+        Oled::drawBigText(0,0, "R0:");
+        Oled::drawBigText(40,0, r0_on?"ON":"OFF");
+        Oled::drawBigText(0,20, "R1:");
+        Oled::drawBigText(40,20, r1_on?"ON":"OFF");  
+        
+        digitalWrite(RELAY_0, r0_on);
+        digitalWrite(RELAY_1, r1_on);
       }
   }
 
