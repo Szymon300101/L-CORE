@@ -8,10 +8,10 @@
 #define ADDRESS 0
 
 
-#define NET_SIZE 2
+#define NET_SIZE 4
 
 
-int routing_table[NET_SIZE] = {0,1};
+int routing_table[NET_SIZE] = {0,1,2,3};
 
 
 

@@ -55,24 +55,24 @@ void setup() {
     //kanał 0
     case CH0_ON_PIN:
       {byte msg[2] = {0,1};
-      Oled::drawBigText(0,0, "R0 ON: ");
+      Oled::drawBigText(0,0, "Relay0 ON ");
       result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
     case CH0_OFF_PIN:
       {byte msg[2] = {0,0};
-      Oled::drawBigText(0,0, "R0 FF: ");
+      Oled::drawBigText(0,0, "Relay0 0FF ");
       result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
 
     //kanał 1
     case CH1_ON_PIN:
       {byte msg[2] = {1,1};
-      Oled::drawBigText(0,0, "R1 ON: ");
+      Oled::drawBigText(0,0, "Relay1 ON ");
       result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
     case CH1_OFF_PIN:
       {byte msg[2] = {1,0};
-      Oled::drawBigText(0,0, "R1 OFF: ");
+      Oled::drawBigText(0,0, "Relay1 OFF ");
       result = Lora::send_with_ack(RELAY_STATION_ADRESS,msg,2);}
     break;
 
